@@ -1,0 +1,82 @@
+{
+	"name": "cpp-game",
+	"version": "1.0.0",
+	"externalDependencies": {
+		"SFML": {
+			"kind": "git",
+			"repository": "https://github.com/SFML/SFML.git",
+			"tag": "2.6.0"
+		},
+		"catch2": {
+			"kind": "git",
+			"repository": "https://github.com/catchorg/Catch2.git",
+			"branch": "v2.x"
+		}
+	},
+	"abstracts:sfml": {
+		"language": "C++",
+		"settings:Cxx": {
+			"cppStandard": "c++17",
+			"runtimeTypeInformation": false,
+			"cppFilesystem": true,
+			"warningsPreset": "strict",
+			"treatWarningsAsErrors": true,
+			"defines[:debug]": [
+				"_DEBUG"
+			],
+			"includeDirs": [
+				"src",
+				"${external:SFML}/include"
+			],
+			"libDirs": [
+				"${externalBuild:SFML}/lib"
+			],
+			"links[:!debug]": [
+				"sfml-graphics",
+				"sfml-audio",
+				"sfml-network",
+				"sfml-window",
+				"sfml-system"
+			],
+			"links[:debug]": [
+				"sfml-graphics-d",
+				"sfml-audio-d",
+				"sfml-network-d",
+				"sfml-window-d",
+				"sfml-system-d"
+			],
+			"links[:windows]": [
+				"gdi32",
+				"dwmapi"
+			]
+		}
+	},
+	"targets": {
+		"sfml": {
+			"kind": "cmakeProject",
+			"location": "${external:SFML}",
+			"recheck": false,
+			"rebuild": false
+		},
+		"cpp-game": {
+			"kind": "executable",
+			"extends": "sfml",
+			"language": "C++",
+			"settings:Cxx": {
+				"cppStandard": "c++17",
+				"warningsPreset": "pedantic",
+				"precompiledHeader": "src/pch.hpp",
+				"includeDirs": [
+					"src"
+				]
+			},
+			"files": "src/**.cpp"
+		}
+	},
+	"distribution": {
+		"all": {
+			"kind": "bundle",
+			"buildTargets": "*"
+		}
+	}
+}
