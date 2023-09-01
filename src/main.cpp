@@ -7,9 +7,9 @@ using namespace std;
 int main(const int argc, const char* argv[])
 {
 	sf::Vector2i win(1280, 720);
-	float movementSpeed = 600.0f;
+	int speed = 3;
+	float speeds[6] = { 0.0, 100.0, 200.0, 400.0, 800.0, 1600.0 }; // pixels per second
 	float fpsDeltaTime = 0.0;
-	float startSpeeed = 600.0f;
 	string fpsTxt = "FPS:  0";
 	string spriteSpeedsTxt = "";
 
@@ -23,15 +23,15 @@ int main(const int argc, const char* argv[])
 	ball.setPosition(sf::Vector2f((float)win.x/2, (float)win.y/2));
 
 	sf::CircleShape cs1(25.f);
-	Sprite sprite1(&cs1, startSpeeed);
+	Sprite sprite1(&cs1, speeds[speed]);
 	sf::CircleShape cs2(25.f, 3);
-	Sprite sprite2(&cs2, startSpeeed);
+	Sprite sprite2(&cs2, speeds[speed]);
 	sf::RectangleShape cs3(sf::Vector2f(35.f, 35.f));
-	Sprite sprite3(&cs3, startSpeeed);
+	Sprite sprite3(&cs3, speeds[speed]);
 	sf::CircleShape cs4(15.f, 3);
-	Sprite sprite4(&cs4, startSpeeed);
+	Sprite sprite4(&cs4, speeds[speed]);
 	sf::CircleShape cs5(15.f, 3);
-	Sprite sprite5(&cs5, startSpeeed);
+	Sprite sprite5(&cs5, speeds[speed]);
 
 
 	Sprite * sprites[5];
@@ -68,28 +68,28 @@ int main(const int argc, const char* argv[])
 			if (event.key.code == sf::Keyboard::Escape)
 				window.close();
 
-			sf::Vector2f movement(0.0f, 0.0f);
-
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-				movement.x -= movementSpeed * deltaTime;
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-				movement.x += movementSpeed * deltaTime;
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-				movement.y -= movementSpeed * deltaTime;
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-				movement.y += movementSpeed * deltaTime;
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
 			{
-				for (int i = 0; i < spriteCount; i++) {
-					sprites[i]->speed = sprites[i]->speed * 0.8f;
-				}
+				speed = (speed > 1 ? speed -= 1 : 0);
 			}
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
 			{
-				for (int i = 0; i < spriteCount; i++) {
-					sprites[i]->speed = sprites[i]->speed * 1.25f;
-				}
+				int max = sizeof(speeds)/sizeof(speeds[0]) - 1;
+				speed = (speed < max ? speed += 1 : max);
+				cout << speed << " " << sizeof(speeds)/sizeof(speeds[0]) << "\n";
 			}
+			for (int i = 0; i < spriteCount; i++) {
+				sprites[i]->speed = speeds[speed];
+			}
+			sf::Vector2f movement(0.0f, 0.0f);
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+				movement.x -= speeds[speed] * deltaTime;
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+				movement.x += speeds[speed] * deltaTime;
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+				movement.y -= speeds[speed] * deltaTime;
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+				movement.y += speeds[speed] * deltaTime;
 
 			ball.move(movement);
 		}
