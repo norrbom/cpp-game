@@ -6,48 +6,47 @@ using namespace std;
 
 int main(const int argc, const char* argv[])
 {
-	sf::Vector2i win(1280, 720);
-	int speed = 3;
-	float speeds[6] = { 0.0, 100.0, 200.0, 400.0, 800.0, 1600.0 }; // pixels per second
+	// General settings
+	sf::Clock clock;
 	float fpsDeltaTime = 0.0;
 	string fpsTxt = "FPS:  0";
-	string spriteSpeedsTxt = "";
+	string GAME_TITLE = "My Game";
 
+	// NPC Settings
+	int speed = 3;
+	float speeds[6] = { 0.0, 100.0, 200.0, 400.0, 800.0, 1600.0 }; // pixels per second
+
+	/* Initialize window */
+	sf::Vector2i win(1024, 768);
 	sf::RenderWindow window(sf::VideoMode(win.x, win.y), "My Game", sf::Style::Default);
 	// window.setVerticalSyncEnabled(true);
 	window.setFramerateLimit(60);
 
-	/* initialize shapes */
-	sf::CircleShape ball(20.f);
-	ball.setFillColor(sf::Color(150, 50, 250));
-	ball.setPosition(sf::Vector2f((float)win.x/2, (float)win.y/2));
+	/* Initialize objects */
+	sf::CircleShape characterShape(20.f);
+	characterShape.setOrigin(characterShape.getRadius() , characterShape.getRadius());
+	characterShape.setFillColor(sf::Color(150, 50, 250));
+	float r = characterShape.getRadius();
+	Sprite character(&characterShape, sf::Vector2f((float)win.x/2, (float)win.y/2), speeds[speed]);
+	character.friction = 0.9f;
 
-	sf::CircleShape cs1(25.f);
-	Sprite sprite1(&cs1, speeds[speed]);
-	sf::CircleShape cs2(25.f, 3);
-	Sprite sprite2(&cs2, speeds[speed]);
-	sf::RectangleShape cs3(sf::Vector2f(35.f, 35.f));
-	Sprite sprite3(&cs3, speeds[speed]);
-	sf::CircleShape cs4(15.f, 3);
-	Sprite sprite4(&cs4, speeds[speed]);
-	sf::CircleShape cs5(15.f, 3);
-	Sprite sprite5(&cs5, speeds[speed]);
-
-
-	Sprite * sprites[5];
-
-	sprites[0] = &sprite1;
-	sprites[1] = &sprite2;
-	sprites[2] = &sprite3;
-	sprites[3] = &sprite4;
-	sprites[4] = &sprite5;
-	int spriteCount = sizeof(sprites)/sizeof(sprites[0]);
-
-    sf::Clock clock;
+	float diam = 10.f;
+	int count = 400;
+	vector<Sprite> sprites;
+	vector<sf::CircleShape> circles;
+	for (int i = 0; i < count; ++i) {
+		circles.push_back(sf::CircleShape(diam));
+	}
+	for (int i = 0; i < count; ++i) {
+		sprites.push_back(Sprite(&circles[i], sf::Vector2f(rnd(diam / 2, (float)win.x - (diam / 2)), diam / 2), speeds[speed]));
+		sprites[i].direction = sf::Vector2f(rnd(-1.0f, 1.0f), rnd(-1.0f, 1.0f));
+		sprites[i].shape->setOrigin(diam/2 , diam/2);
+		sprites[i].friction = 0.99f;
+	}
 
 	sf::Font font;
 	if (!font.loadFromFile("3270NerdFontMono-Regular.ttf")) {
-		cout << "Font error!";
+		cout << "[ERROR] Could not load Font!";
 	}
 	sf::Text topMenu;
 	topMenu.setFont(font);
@@ -67,31 +66,48 @@ int main(const int argc, const char* argv[])
 				window.close();
 			if (event.key.code == sf::Keyboard::Escape)
 				window.close();
+			if (event.key.code == sf::Keyboard::F)
+			{
+				window.create(sf::VideoMode::getFullscreenModes()[0], GAME_TITLE, sf::Style::Fullscreen);
+				window.setFramerateLimit(60);
+				win = sf::Vector2i(window.getSize().x, window.getSize().y);
+			}
 
+
+			// Control speed
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
 			{
 				speed = (speed > 1 ? speed -= 1 : 0);
+				for (int i = 0; i < sprites.size(); i++) {
+					sprites[i].speed = speeds[speed];
+				}
 			}
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
 			{
 				int max = sizeof(speeds)/sizeof(speeds[0]) - 1;
 				speed = (speed < max ? speed += 1 : max);
-				cout << speed << " " << sizeof(speeds)/sizeof(speeds[0]) << "\n";
+				for (int i = 0; i < sprites.size(); i++) {
+					sprites[i].speed = speeds[speed];
+				}
 			}
-			for (int i = 0; i < spriteCount; i++) {
-				sprites[i]->speed = speeds[speed];
-			}
-			sf::Vector2f movement(0.0f, 0.0f);
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-				movement.x -= speeds[speed] * deltaTime;
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-				movement.x += speeds[speed] * deltaTime;
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-				movement.y -= speeds[speed] * deltaTime;
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-				movement.y += speeds[speed] * deltaTime;
 
-			ball.move(movement);
+			// Control character, set full speed and direction
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+				character.speed = speeds[speed];
+				character.direction = sf::Vector2f(-1.0, 0.0);
+			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)){
+				character.speed = speeds[speed];
+			 	character.direction = sf::Vector2f(1.0, 0.0);
+			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)){
+				character.speed = speeds[speed];
+			 	character.direction = sf::Vector2f(0.0, -1.0);
+			}
+			 if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)){
+				character.speed = speeds[speed];
+			 	character.direction = sf::Vector2f(0.0, 1.0);
+			}
 		}
 
 		window.clear(sf::Color::Black);
@@ -102,23 +118,18 @@ int main(const int argc, const char* argv[])
 			fpsDeltaTime = 0.0;
 		}
 
-		spriteSpeedsTxt = "";
-		for (int i = 0; i < spriteCount; i++)
+		for (int i = 0; i < sprites.size(); i++)
 		{
-			spriteSpeedsTxt += "\nspeed: ";
-			spriteSpeedsTxt += to_string((int)sprites[i]->speed);
-			spriteSpeedsTxt += " pos: (";
-			sf::Vector2f pos = sprites[i]->shape->getPosition();
-			spriteSpeedsTxt += to_string((int)pos.x);
-			spriteSpeedsTxt += ", ";
-			spriteSpeedsTxt += to_string((int)pos.y);
-			spriteSpeedsTxt += ")";
-			window.draw(*sprites[i]->move(deltaTime, &win));
+			sf::CircleShape * theShape = sprites[i].shape;
+			sf::Vector2f pos = theShape->getPosition();
+			sprites[i].autoMove(deltaTime, &win);
+			window.draw(*sprites[i].shape);
 		}
 
-		topMenu.setString(fpsTxt + spriteSpeedsTxt);
+		topMenu.setString(fpsTxt + "\nESC: Quit\nF: Full screen mode\nArrows: Speed\nAWSD: Movement");
 		window.draw(topMenu);
-		window.draw(ball);
+		character.move(deltaTime, &win);
+		window.draw(*character.shape);
 		window.display();
 	}
 	return 0;

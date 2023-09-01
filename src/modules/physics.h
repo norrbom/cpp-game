@@ -1,21 +1,33 @@
 #ifndef MY_PHYSICS
 #define MY_PHYSICS
 
-bool touchedGround(sf::Shape* s, int y) {
-	if (s->getPosition().y > y) return true;
-	return false;
-}
-bool touchedCeiling(sf::Shape* s) {
-	if (s->getPosition().y < 0) return true;
-	return false;
-}
-bool touchedRightWall(sf::Shape* s, int x) {
-	if (s->getPosition().x > x) return true;
-	return false;
-}
-bool touchedLeftWall(sf::Shape* s) {
-	if (s->getPosition().x < 0) return true;
-	return false;
-}
+class Collision
+{
+    public:
+		Collision(sf::CircleShape * shape): shape(shape)
+		{
+			assert(shape != NULL);
+			radius = shape->getRadius();
+			pos = shape->getPosition();
+		}
+		sf::CircleShape * shape;
+		sf::Vector2f pos;
+		float radius;
+		/*
+		returns:
+			0: No collsision
+			1: floor collision
+			2: ceiling collision
+			3: left collision
+			4: right collision
+		*/
+		int window(sf::Vector2i * win) {
+			if (pos.y + radius > win->y) return 1;
+			if (pos.y - radius < 0)      return 2;
+			if (pos.x - radius < 0)      return 3;
+			if (pos.x + radius > win->x) return 4;
+			return 0;
+		}
+};
 
 #endif

@@ -16,4 +16,10 @@ public:
     }
 };
 
+float rnd(float min, float max) {
+    // construct a trivial random generator engine from a time-based seed:
+    RangeRandGenerator generator(min, max);
+    return (float) generator.get();
+}
+
 #endif

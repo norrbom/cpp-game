@@ -4,37 +4,55 @@
 class Sprite
 {
     public:
-        // p must be a pointer returned by new; it must not be NULL
-        Sprite(sf::Shape* shape, float speed):
+        Sprite() {};
+        Sprite(sf::CircleShape* shape, sf::Vector2f pos, float speed):
             shape(shape),
-            speed(speed),
-            direction(rnd(-1, 1), rnd(-1, 1))
+            speed(speed)
         {
             assert(shape != NULL);
+            shape->setPosition(pos);
             shape->setFillColor(randColor());
-        }
-        sf::Shape* shape;
+        };
+        sf::CircleShape* shape;
+        sf::Vector2f direction;
         float speed;
-        sf::Shape* move(float deltaTime, sf::Vector2i* w) {
-
-            if (touchedGround(shape, (*w).y) || touchedCeiling(shape)) {
-                shape->setFillColor(randColor());
-                direction.y = direction.y * -1.0f;
-            }
-            if (touchedRightWall(shape, (*w).x) || touchedLeftWall(shape)) {
-                shape->setFillColor(randColor());
-                direction.x = direction.x * -1.0f;
-            }
+        float friction = 1.0;
+        void move(float deltaTime, sf::Vector2i * w) {
             float distance = speed * deltaTime;
+            sf::Vector2f beforePos = shape->getPosition();
             shape->move(sf::Vector2f(distance * direction.x, distance * direction.y));
-            return shape;
+            // if (Collision(shape).window(w)) {
+            //     // undo move
+            //     shape->setPosition(beforePos);
+            // }
+            // slow down speed due to friction
+            speed = speed * friction;
+
+        }
+        void autoMove(float deltaTime, sf::Vector2i * win) {
+            bounce(win);
+            //float distance = speed * deltaTime;
+            move(deltaTime, win);
+            //shape->move(sf::Vector2f(distance * direction.x, distance * direction.y));
         }
     private:
-        sf::Vector2f direction;
-        float rnd(int min, int max) {
-            // construct a trivial random generator engine from a time-based seed:
-            RangeRandGenerator generator(min, max);
-            return (float) generator.get();
+        void bounce(sf::Vector2i * win) {
+            int col = Collision(shape).window(win);
+            if (col != 0) {
+                shape->setFillColor(randColor());
+            }
+            if (col == 1) {
+                direction.y = -abs(direction.y);
+            }
+            if (col == 2) {
+                direction.y = abs(direction.y);
+            }
+            if (col == 3) {
+                direction.x = abs(direction.x);
+            }
+            if (col == 4) {
+                direction.x = -abs(direction.x);
+            }
         }
         sf::Color randColor() {
             return sf::Color((int)rnd(50, 255), (int)rnd(50, 255), (int)rnd(50, 255));
