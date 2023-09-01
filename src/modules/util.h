@@ -1,10 +1,12 @@
 #ifndef MY_UTIL
 #define MY_UTIL
 
+using namespace std;
+
 class RangeRandGenerator {
-    std::uniform_real_distribution<double> dist;
-    std::random_device rd;
-    std::default_random_engine gen;
+    uniform_real_distribution<double> dist;
+    random_device rd;
+    default_random_engine gen;
 public:
     RangeRandGenerator(double from, double to) :
         dist(from, to), gen(rd()) {}
