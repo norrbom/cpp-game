@@ -1,33 +1,31 @@
 #ifndef MY_PHYSICS
 #define MY_PHYSICS
 
-class Collision
+namespace phys
 {
-    public:
-		Collision(sf::CircleShape * shape): shape(shape)
-		{
-			assert(shape != NULL);
-			radius = shape->getRadius();
-			pos = shape->getPosition();
-		}
-		sf::CircleShape * shape;
-		sf::Vector2f pos;
-		float radius;
-		/*
-		returns:
-			0: No collsision
-			1: floor collision
-			2: ceiling collision
-			3: left collision
-			4: right collision
-		*/
-		int window(sf::Vector2i * win) {
-			if (pos.y + radius > win->y) return 1;
-			if (pos.y - radius < 0)      return 2;
-			if (pos.x - radius < 0)      return 3;
-			if (pos.x + radius > win->x) return 4;
-			return 0;
-		}
-};
+	std::array<int,4> collisions;
 
+	enum edge
+	{
+		FLOOR,
+		CEILING,
+		LEFT,
+		RIGHT
+	};
+
+	// TODO: return an array of multiple collisions
+	std::array<int,4> collision(sf::CircleShape * shape, sf::Vector2i * frame)
+	{
+		assert(shape != NULL && frame != NULL);
+		sf::Vector2f pos = shape->getPosition();
+		float radius = shape->getRadius();
+		collisions = {0,0,0,0};
+
+		if (pos.y + radius >= frame->y) collisions[FLOOR]   = 1;
+		if (pos.y - radius <= 0)        collisions[CEILING] = 1;
+		if (pos.x - radius <= 0)        collisions[LEFT]    = 1;
+		if (pos.x + radius >= frame->x) collisions[RIGHT]   = 1;
+		return collisions;
+	}
+}
 #endif

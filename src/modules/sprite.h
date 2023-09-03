@@ -5,53 +5,76 @@ class Sprite
 {
     public:
         Sprite() {};
-        Sprite(sf::CircleShape* shape, sf::Vector2f pos, float speed):
+        Sprite(sf::CircleShape* shape, sf::Vector2f pos, sf::Vector2f velocity, float gravity):
             shape(shape),
-            speed(speed)
+            velocity(velocity),
+            gravity(gravity)
         {
             assert(shape != NULL);
             shape->setPosition(pos);
             shape->setFillColor(randColor());
         };
+
         sf::CircleShape* shape;
-        sf::Vector2f direction;
-        float speed;
-        float friction = 1.0;
-        void move(float deltaTime, sf::Vector2i * w) {
-            float distance = speed * deltaTime;
-            sf::Vector2f beforePos = shape->getPosition();
-            shape->move(sf::Vector2f(distance * direction.x, distance * direction.y));
-            // if (Collision(shape).window(w)) {
-            //     // undo move
-            //     shape->setPosition(beforePos);
-            // }
-            // slow down speed due to friction
-            speed = speed * friction;
+        sf::Vector2f force; // external force on on the Sprite
+        sf::Vector2f velocity;
+
+        float bounciness = 0.2f;
+        float friction = 0.8f;
+        float mass = 1.0f;    // kg
+        float gravity = 980.0f; // (cm/s^2)
+        std::array<int,4> collisions;
+
+        // force = mass * acceleration
+        // acceleration = force / mass
+        // velocity = force / mass * dt
+        // velocity = acceleration * dt
+        // acceleration = velocity / dt
+        void applyForces(float dt) {
+            velocity.x += force.x / mass * dt;
+            // avoid gravity causing micro bouncing forever
+            if (collisions[phys::FLOOR] && abs(velocity.y) < (bounciness * gravity / 10) && abs(force.y) < 0.1f)
+            {
+                velocity.y = 0.0f;
+                // TODO: friction on Y and headwind
+                velocity.x = velocity.x * friction;
+            }
+            else {
+                velocity.y += gravity * dt + (force.y / mass * dt);
+            }
+            sf::Vector2f pos = shape->getPosition();
+            shape->setPosition(pos.x + (velocity.x * dt), pos.y + (velocity.y * dt));
+            force = sf::Vector2f(0.0f, 0.0f);
+        }
+
+        void move(float dt, sf::Vector2i * win) {
+            collisions = phys::collision(shape, win);
+            if (collisions[phys::FLOOR] || collisions[phys::CEILING] || collisions[phys::LEFT] || collisions[phys::RIGHT]) {
+                shape->setFillColor(randColor());
+                bounce(collisions, win);
+            }
+            applyForces(dt);
 
         }
-        void autoMove(float deltaTime, sf::Vector2i * win) {
-            bounce(win);
-            //float distance = speed * deltaTime;
-            move(deltaTime, win);
-            //shape->move(sf::Vector2f(distance * direction.x, distance * direction.y));
-        }
     private:
-        void bounce(sf::Vector2i * win) {
-            int col = Collision(shape).window(win);
-            if (col != 0) {
-                shape->setFillColor(randColor());
+        void bounce(std::array<int,4> collision, sf::Vector2i * win) {
+            sf::Vector2f pos = shape->getPosition();
+            float rad = shape->getRadius();
+            if (collisions[phys::FLOOR]) {
+                shape->setPosition(pos.x, (float)win->y - rad);
+                velocity.y = -abs(velocity.y) * bounciness;
             }
-            if (col == 1) {
-                direction.y = -abs(direction.y);
+            if (collisions[phys::CEILING]) {
+                shape->setPosition(pos.x, rad);
+                velocity.y = abs(velocity.y) * bounciness;
             }
-            if (col == 2) {
-                direction.y = abs(direction.y);
+            if (collisions[phys::LEFT]) {
+                shape->setPosition(rad, pos.y);
+                velocity.x = abs(velocity.x) * bounciness;
             }
-            if (col == 3) {
-                direction.x = abs(direction.x);
-            }
-            if (col == 4) {
-                direction.x = -abs(direction.x);
+            if (collisions[phys::RIGHT]) {
+                shape->setPosition((float)win->x - rad, pos.y);
+                velocity.x = -abs(velocity.x) * bounciness;
             }
         }
         sf::Color randColor() {

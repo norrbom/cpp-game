@@ -1,4 +1,5 @@
 #include "modules/physics.h"
+#include "modules/window.h"
 #include "modules/util.h"
 #include "modules/sprite.h"
 
@@ -9,49 +10,42 @@ int main(const int argc, const char* argv[])
 	// General settings
 	sf::Clock clock;
 	float fpsDeltaTime = 0.0;
-	string fpsTxt = "FPS:  0";
-	string GAME_TITLE = "My Game";
-
-	// NPC Settings
-	int speed = 3;
-	float speeds[6] = { 0.0, 100.0, 200.0, 400.0, 800.0, 1600.0 }; // pixels per second
+	string stats = "FPS:  0";
+	string GAME_TITLE = "Dungeon Escape";
+	float GRAVITY = 980.0f; // cm/s
+	sf::Vector2f initVelocity(rnd(100.0f, 100.0f), rnd(100.0f, 100.0f));
+	int fps = 0;
 
 	/* Initialize window */
-	sf::Vector2i win(1024, 768);
-	sf::RenderWindow window(sf::VideoMode(win.x, win.y), "My Game", sf::Style::Default);
-	// window.setVerticalSyncEnabled(true);
-	window.setFramerateLimit(60);
+	sf::RenderWindow window;
+	sf::Vector2i win = createWindow(&window, 1024, 768, GAME_TITLE, sf::Style::Default);
 
 	/* Initialize objects */
 	sf::CircleShape characterShape(20.f);
 	characterShape.setOrigin(characterShape.getRadius() , characterShape.getRadius());
 	characterShape.setFillColor(sf::Color(150, 50, 250));
 	float r = characterShape.getRadius();
-	Sprite character(&characterShape, sf::Vector2f((float)win.x/2, (float)win.y/2), speeds[speed]);
-	character.friction = 0.9f;
+	Sprite character(&characterShape, sf::Vector2f((float)win.x/2, (float)win.y/2), initVelocity, GRAVITY);
 
-	float diam = 10.f;
-	int count = 400;
+	float radius = 40.f;
+	int count = 4;
 	vector<Sprite> sprites;
 	vector<sf::CircleShape> circles;
 	for (int i = 0; i < count; ++i) {
-		circles.push_back(sf::CircleShape(diam));
+		circles.push_back(sf::CircleShape(radius));
 	}
 	for (int i = 0; i < count; ++i) {
-		sprites.push_back(Sprite(&circles[i], sf::Vector2f(rnd(diam / 2, (float)win.x - (diam / 2)), diam / 2), speeds[speed]));
-		sprites[i].direction = sf::Vector2f(rnd(-1.0f, 1.0f), rnd(-1.0f, 1.0f));
-		sprites[i].shape->setOrigin(diam/2 , diam/2);
+		sprites.push_back(Sprite(&circles[i], sf::Vector2f(rnd(radius, (float)win.x - radius), rnd(radius, (float)win.y- radius)), sf::Vector2f(rnd(100.0f, 400.0f), rnd(100.0f, 400.0f)), GRAVITY));
+		sprites[i].bounciness = 0.70f;
 		sprites[i].friction = 0.99f;
+		sprites[i].shape->setOrigin(radius , radius);
 	}
 
 	sf::Font font;
-	if (!font.loadFromFile("3270NerdFontMono-Regular.ttf")) {
-		cout << "[ERROR] Could not load Font!";
+	if (!font.loadFromFile("resources/3270NerdFontMono-Regular.ttf")) {
+		throw std::runtime_error {"Could not load Font"};
 	}
-	sf::Text topMenu;
-	topMenu.setFont(font);
-	topMenu.setCharacterSize(14);
-	topMenu.setFillColor(sf::Color::White);
+	sf::Text topMenu("", font, 16);
 
 	while (window.isOpen())
 	{
@@ -68,53 +62,28 @@ int main(const int argc, const char* argv[])
 				window.close();
 			if (event.key.code == sf::Keyboard::F)
 			{
-				window.create(sf::VideoMode::getFullscreenModes()[0], GAME_TITLE, sf::Style::Fullscreen);
-				window.setFramerateLimit(60);
-				win = sf::Vector2i(window.getSize().x, window.getSize().y);
-			}
-
-
-			// Control speed
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-			{
-				speed = (speed > 1 ? speed -= 1 : 0);
-				for (int i = 0; i < sprites.size(); i++) {
-					sprites[i].speed = speeds[speed];
-				}
-			}
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-			{
-				int max = sizeof(speeds)/sizeof(speeds[0]) - 1;
-				speed = (speed < max ? speed += 1 : max);
-				for (int i = 0; i < sprites.size(); i++) {
-					sprites[i].speed = speeds[speed];
-				}
+				win = createWindow(&window, 0, 0, GAME_TITLE, sf::Style::Fullscreen);
 			}
 
 			// Control character, set full speed and direction
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-				character.speed = speeds[speed];
-				character.direction = sf::Vector2f(-1.0, 0.0);
+				character.force = sf::Vector2f(-20000.0, 0.0);
 			}
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)){
-				character.speed = speeds[speed];
-			 	character.direction = sf::Vector2f(1.0, 0.0);
+			 	character.force = sf::Vector2f(20000.0, 0.0);
 			}
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)){
-				character.speed = speeds[speed];
-			 	character.direction = sf::Vector2f(0.0, -1.0);
+			 	character.force = sf::Vector2f(0.0, -20000.0);
 			}
 			 if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)){
-				character.speed = speeds[speed];
-			 	character.direction = sf::Vector2f(0.0, 1.0);
+			 	character.force = sf::Vector2f(0.0, 20000.0);
 			}
 		}
 
 		window.clear(sf::Color::Black);
 
 		if (fpsDeltaTime > 0.5) {
-			int fps = int(1/deltaTime);
-			fpsTxt = "FPS: " + to_string(fps);
+			fps = int(1/deltaTime);
 			fpsDeltaTime = 0.0;
 		}
 
@@ -122,11 +91,23 @@ int main(const int argc, const char* argv[])
 		{
 			sf::CircleShape * theShape = sprites[i].shape;
 			sf::Vector2f pos = theShape->getPosition();
-			sprites[i].autoMove(deltaTime, &win);
+			sprites[i].move(deltaTime, &win);
 			window.draw(*sprites[i].shape);
 		}
 
-		topMenu.setString(fpsTxt + "\nESC: Quit\nF: Full screen mode\nArrows: Speed\nAWSD: Movement");
+
+		stats = "FPS: " + to_string(fps) + "\n";
+		stats +=
+			"Character radius: " + to_string((int)character.shape->getRadius()) + "\n"
+			"Window   x: " + to_string(win.x) + " y: " + to_string(win.y) + "\n"
+			"velocity x: " + to_string((int)character.velocity.x) + " y: " + to_string((int)character.velocity.y) + "\n"
+			"force    x: " + to_string((int)character.force.x)    + " y: " + to_string((int)character.force.y) + "\n"
+			"postion  x: " + to_string((int)character.shape->getPosition().x)    + " y: " + to_string((int)character.shape->getPosition().y) + "\n"
+			"collision FLOOR: "  + to_string(character.collisions[phys::FLOOR]) + "\n"
+			"collision CEILING: "  + to_string(character.collisions[phys::CEILING]) + "\n"
+			"collision LEFT: "  + to_string(character.collisions[phys::LEFT]) + "\n"
+			"collision RIGHT: "  + to_string(character.collisions[phys::RIGHT]);
+		topMenu.setString("ESC: Quit\nF: Full screen mode\nA,W,S,D: Movement\n" + stats);
 		window.draw(topMenu);
 		character.move(deltaTime, &win);
 		window.draw(*character.shape);
