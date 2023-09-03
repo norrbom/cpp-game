@@ -16,6 +16,7 @@
 #include <cassert>
 #include <chrono>
 #include <random>
+#include <array>
 
 // SFML
 #include <SFML/Audio.hpp>
